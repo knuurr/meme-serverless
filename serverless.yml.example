@@ -1,0 +1,50 @@
+service: meme-lambda
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.10
+  region: eu-central-1 # your region here
+  memorySize: 128 # optional, in MB, default is 1024
+  # https://www.serverless.com/framework/docs/providers/aws/guide/iam
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action: 's3:ListBucket'
+          Resource:
+            - 'arn:aws:s3:::${self:custom.s3BucketName}'
+        # Allow functions to read/write objects in a bucket
+        - Effect: Allow
+          Action:
+            - 's3:GetObject'
+          Resource:
+            - 'arn:aws:s3:::${self:custom.s3BucketName}/*'
+  
+  apiGateway:
+    apiKeys:
+      - "your-api-key"
+    binaryMediaTypes:
+      - '*/*'
+
+
+functions:
+  meme-func:
+    handler: handler.lambda_handler
+    environment:
+      S3_BUCKET: ${self:custom.s3BucketName}
+    events:
+      # Gateway type: REST vs HTTP API
+      # - httpApi:
+      - http:
+          path: /meme
+          method: GET
+          # enable if wish to use API key
+          private: true
+    # Configure the size of ephemeral storage available to your Lambda function (in MBs, default: 512)
+    ephemeralStorageSize: 512
+
+custom:
+  s3BucketName: meme-storage-bucket-name
+
